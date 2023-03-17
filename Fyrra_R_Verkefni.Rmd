@@ -1,0 +1,146 @@
+---
+title: "Fyrra R Verkefni"
+author: "Nouvan Shebubakar (mns2@hi.is), Styrmir Örn Arnarson (soa61@hi.is), Ívar Sigurðsson(ivs10@hi.is)"
+date: "2023-02-01"
+output: rmdformats::readthedown
+---
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(forcats)
+library(knitr)
+library(kableExtra)
+options(scipen = 999)
+```
+
+## Hluti 1 - Gagnamöndl (30 %)
+
+### a) Lesa gagnasafnid inn i R
+```{r}
+nsi <- read.table("https://ahj.hi.is/husnaedisverd_2017_21.csv", header = TRUE, sep = ";", stringsAsFactors = T, encoding = "UTF-8")
+```
+
+### b) 3 Hverfi
+```{r}
+hverfi <- c(300,320,330)
+nsi <- filter(nsi, matssvaedi%in%hverfi)
+```
+
+### c) Checking the type of all variables in n
+```{r}
+str(nsi)
+```
+
+### d) Nyja breyta kalla fermetraverd
+```{r}
+nsi <- mutate(nsi, fermetraverd = kaupverd / birtm2)
+```
+
+### e) Nyja breyta teg_eign_s_i
+```{r}
+nsi <- mutate(nsi, teg_eign_s_i = fct_recode(teg_eign, Sérbýli = "Einbýlishús", Sérbýli = "Parhús", Sérbýli = "Raðhús", Íbúð = "Íbúðareign"))
+```
+
+### f)
+```{r}
+nsi <- mutate(nsi, matssvaedi = factor(matssvaedi))
+levels(nsi$matssvaedi) <- c("Kóp-Vesturbær", "Kóp-Austurbær", "Kóp-Hjallar,Smárar")
+```
+
+## Hluti 2 - Myndræn framsetning (25 %)
+
+### g)
+```{r, echo = F}
+ggplot(nsi, aes(x = kaupverd)) + geom_histogram(bins = 18, color = "#000000", fill = "#0099F8") + labs(title = "Histogram of Housing Price", y = "Fjöldi")+ theme_classic() + theme(axis.text.x = element_text(angle = 90), plot.title = element_text(color = "#0099F8", size = 16, face = "bold"))+ scale_x_continuous(breaks = seq(5000,130000, by = 5000))
+
+ggplot(nsi, aes(x = birtm2)) + geom_histogram(bins = 23, color = "#000000", fill = "#0099F8") + labs(title = "Histogram of Housing Size",x = "Fermetrar", y = "Fjöldi") + theme_classic() + theme(axis.text.x = element_text(angle = 90), plot.title = element_text(color = "#0099F8", size = 16, face = "bold")) + scale_x_continuous(breaks = seq(25,450, by = 25))
+```
+
+### h)
+```{r, echo = F}
+df2 <- drop_na(nsi) %>%
+  group_by(matssvaedi, teg_eign_s_i)%>%
+  summarise(Fjöldi = n(), .groups = 'drop')
+ggplot(df2, aes(x = matssvaedi, y = Fjöldi)) + geom_col(aes(fill = teg_eign_s_i), position = 'dodge') + geom_text(aes(label = Fjöldi, group = teg_eign_s_i), position = position_dodge(width = 0.9), color = "black", vjust = 0.01, size = 3) + scale_fill_brewer(palette = "Paired") + theme_classic()
+```
+
+### i) 
+```{r, echo = F}
+ggplot(nsi, aes(x = teg_eign_s_i, y = fermetraverd, fill = teg_eign_s_i)) + geom_boxplot() + labs(x = "Tegund eigna", y = "Fermetraverð", fill = "Tegundir Eignar") + scale_fill_manual(values = c("red", "blue"), labels = c("Sérbýli", "Íbúð")) + theme_classic()
+```
+
+### j)
+```{r, echo = F}
+ggplot(nsi, aes(x = birtm2, y = kaupverd, color = teg_eign_s_i)) + geom_point(size = 0.5) + facet_grid(rows = vars(matssvaedi)) + theme_bw() + labs(x = "Stærð Eignar")
+```
+
+## Hluti 3 - Töflur (20 %)
+
+### k)
+```{r, echo = F}
+eignir_hverfi_gerd <- nsi %>%
+  count(matssvaedi, teg_eign_s_i, name = "fjoldi_eigna")
+eignir_hverfi_gerd_breitt <- eignir_hverfi_gerd %>%
+  pivot_wider(names_from = teg_eign_s_i, values_from = fjoldi_eigna)
+
+kable(eignir_hverfi_gerd_breitt)
+
+```
+
+### l)
+```{r, echo = F}
+ns_summary <- round(prop.table(table(nsi$matssvaedi, nsi$teg_eign_s_i),1),3)
+
+row.names(ns_summary) <- c("Kóp-Vesturbær", "Kóp-Austurbær", "Kóp-Hjallar,Smárar")
+
+ns_summary
+kable(ns_summary)
+```
+
+### m)
+```{r, echo = F}
+t1 <- nsi %>%
+  group_by(matssvaedi, teg_eign_s_i) %>%
+  summarise(meðaltal_fermetrar = mean(fermetraverd),
+            miðgildi_fermetrar = median(fermetraverd),
+            staðalfrávik_fermetrar = sd(fermetraverd),
+            fjöldi = n()) 
+colnames(t1) <-c("Hverfi","Gerð Eignar","MeðalStærð M²","Miðgildi M²","StaðalFrávik M²","Fjöldi")
+kable(t1)
+```
+## Hluti 4 - Líkindafræði (15%)
+
+Gerum nú ráð fyrir að við séum að vinna með hverfi á stórreykjavíkursvæðinu þar sem 20% eigna eru einbýlishús. Hugsum okkur nú að við veljum 3 eignir í hverfinu af handahófi.
+
+#### i) 
+```{r}
+h1 <- dbinom(2, 3, 0.2 )
+h1
+```
+Líkurnar að tvær eignanna séu einbýlishús eru `r h1`
+
+#### ii) 
+```{r}
+h2 <- pbinom(2,3,0.2)
+h2
+```
+Líkurnar að færi en tvær eignir séu einbýlishús er `r h2`
+
+### o) 
+Gerum nú ráð fyrir að stærð einbýlishúsa í hverfinu fylgi normaldreifingu með meðaltal 170 fm og staðalfrávik 20 fm. 
+
+#### i) 
+```{r}
+h3 <- 1-pnorm(190,170,20)
+h3
+```
+Líkurnar að hún sé stærri en 190 fm eru `r h3`
+
+#### ii) 
+Jonni ætlar að byggja einbýlishús í hverfinu og vill endilega að það verði í hópi 10% stærstu einbýlishúsanna í hverfinu. Hvað þarf húsið að verða stórt?
+
+```{r}
+h4 <- qnorm(0.9, 170, 20)
+h4
+```
+Húsið þarf að vera stærri en `r h4`
